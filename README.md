@@ -10,7 +10,7 @@
 
 #### SpringBoot
 
-- [Spring Boot Init](springboot/spring-boot-annotation)
+- [Spring Boot 常用注解](springboot/spring-boot-annotation)
 
 ## Reference
 
