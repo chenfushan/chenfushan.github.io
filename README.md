@@ -1,6 +1,10 @@
 ## Welcome to chenfushan blog
 
-本博客计划写系列博客. 初步计划为: SpringBoot & React
+本博客计划写系列博客.   
+
+初步计划为系统架构和系统学习两方面:
+1. 软件系统研发总结  
+2. SpringBoot & React 
 
 ## 目录
 
