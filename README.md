@@ -19,3 +19,9 @@
 ## Support or Contact
 
 If you have any words want to contact me. Email : chenfushan1992@gmail.com
+
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_pv">
+    PV: <span id="busuanzi_value_site_pv"></span>
+</span>
