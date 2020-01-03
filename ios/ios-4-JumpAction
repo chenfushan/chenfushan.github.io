@@ -1,0 +1,35 @@
+
+
+## Jump action by interface
+
+1. connect the jump action by interface
+2. write relation segue code.
+
+```swift
+override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // Get the new view controller using segue.destination.
+        // Pass the selected object to the new view controller.
+        
+        print(segue.identifier ?? "nil")
+    }
+
+override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
+	// if you want to prevent the jump action : return false.
+        return self.loginResult
+    }
+```
+
+## Jump action by code
+
+```swift
+
+@IBAction func ClickLogin(_ sender: UIButton) {
+        jumpToHome()
+    }
+    
+    func jumpToHome(){
+        let storyBoard = UIStoryboard(name: "Main", bundle: nil)
+        let homeView = storyBoard.instantiateViewController(withIdentifier: "HomeNavigator") as! HomeTableViewController
+        self.showDetailViewController(homeView, sender: self)
+    }
+```

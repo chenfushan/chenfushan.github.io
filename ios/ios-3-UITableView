@@ -1,0 +1,37 @@
+#TableView
+
+
+if you want to add a table view to UIViewController.
+
+you need to `implement UITableViewDelegate and UITableViewDataSource`
+
+you can see in define for UITableViewController.
+
+``` swift
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+	
+	@IBOutlet weak var tableView: UITableView!
+
+	override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        self.tableView.dataSource = self
+        // Do any additional setup after loading the view.
+    }
+
+    ...
+
+    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 0 // your number of cells here
+    }
+
+    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        // your cell coding 
+        return UITableViewCell()
+    }
+
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        // cell selected code here
+    }
+}
+```
