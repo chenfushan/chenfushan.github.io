@@ -207,7 +207,7 @@ TIDYING ---terminated()完成后---> TERMINATED
  * @throws NullPointerException if {@code command} is null
  */
 public void execute(Runnable command) {
-	// 这里很容易理解, null的任务不需要执行. 跑出NPE
+	// 这里很容易理解, null的任务不需要执行. 抛出NPE
     if (command == null)
         throw new NullPointerException();
     /*
@@ -262,9 +262,161 @@ public void execute(Runnable command) {
 }
 ```
 
+### reject 方法
+
+这个其实就是最开始实例化ThreadPoolExecutor的时候传递进来的策略.
+
+```java
+/**
+ * Invokes the rejected execution handler for the given command.
+ * Package-protected for use by ScheduledThreadPoolExecutor.
+ */
+final void reject(Runnable command) {
+    handler.rejectedExecution(command, this);
+}
+```
+
+
 ### addWorker 新建线程
 
 
+
+```java
+/**
+ * Checks if a new worker can be added with respect to current
+ * pool state and the given bound (either core or maximum). If so,
+ * the worker count is adjusted accordingly, and, if possible, a
+ * new worker is created and started, running firstTask as its
+ * first task. This method returns false if the pool is stopped or
+ * eligible to shut down. It also returns false if the thread
+ * factory fails to create a thread when asked.  If the thread
+ * creation fails, either due to the thread factory returning
+ * null, or due to an exception (typically OutOfMemoryError in
+ * Thread.start()), we roll back cleanly.
+ *
+ * @param firstTask the task the new thread should run first (or
+ * null if none). Workers are created with an initial first task
+ * (in method execute()) to bypass queuing when there are fewer
+ * than corePoolSize threads (in which case we always start one),
+ * or when the queue is full (in which case we must bypass queue).
+ * Initially idle threads are usually created via
+ * prestartCoreThread or to replace other dying workers.
+ *
+ * @param core if true use corePoolSize as bound, else
+ * maximumPoolSize. (A boolean indicator is used here rather than a
+ * value to ensure reads of fresh values after checking other pool
+ * state).
+ * @return true if successful
+ */
+private boolean addWorker(Runnable firstTask, boolean core) {
+	// goto
+    retry:
+    for (;;) {
+    	// 乐观锁使用方法
+    	// 
+        int c = ctl.get();
+        int rs = runStateOf(c);
+
+        // Check if queue empty only if necessary.
+        // 如果线程池状态不对  &&  ! (线程池是SHUTDOWN && 没提交任务,仅仅新建线程 && 队列里有任务在等待) 意思就是线程池不是一个即将关闭的状态.
+        if (rs >= SHUTDOWN &&
+            ! (rs == SHUTDOWN &&
+               firstTask == null &&
+               ! workQueue.isEmpty()))
+            return false;
+
+        for (;;) {
+            int wc = workerCountOf(c);
+            if (wc >= CAPACITY ||
+                wc >= (core ? corePoolSize : maximumPoolSize))
+                // 线程数量校验失败, 太大了或者超过bounds了 就返回失败
+                return false;
+            if (compareAndIncrementWorkerCount(c))
+            	// 成功的话, 直接break掉
+                break retry;
+            c = ctl.get();  // Re-read ctl
+            if (runStateOf(c) != rs)
+            	// 状态有问题的话, 外层循环重新走
+            	// 说明线程池被其他线程给操作了
+                continue retry;
+            // else CAS failed due to workerCount change; retry inner loop
+        }
+    }
+
+    boolean workerStarted = false;
+    boolean workerAdded = false;
+    Worker w = null;
+    try {
+    	// 新建一个Worker
+        w = new Worker(firstTask);
+        final Thread t = w.thread;
+        if (t != null) {
+            final ReentrantLock mainLock = this.mainLock;
+            mainLock.lock();
+            try {
+                // Recheck while holding lock.
+                // Back out on ThreadFactory failure or if
+                // shut down before lock acquired.
+                int rs = runStateOf(ctl.get());
+
+                if (rs < SHUTDOWN ||
+                    (rs == SHUTDOWN && firstTask == null)) {
+                    if (t.isAlive()) // precheck that t is startable
+                        throw new IllegalThreadStateException();
+                    // 添加worker到hashset中
+                    workers.add(w);
+                    int s = workers.size();
+                    if (s > largestPoolSize)
+                        largestPoolSize = s;
+                    workerAdded = true;
+                }
+            } finally {
+                mainLock.unlock();
+            }
+            if (workerAdded) {
+            	// 启动线程
+                t.start();
+                workerStarted = true;
+            }
+        }
+    } finally {
+        if (! workerStarted)
+            addWorkerFailed(w);
+    }
+    return workerStarted;
+}
+```
+
+这个是启动线程的操作. 终点是各种状态检查以及回滚. 整体就是一个很小心的方法 检查->操作->检查 这种.
+
+### Executors 类
+
+这个类是属于线程池的工具类, 都是一些静态方法用于线程池的工具使用.
+
+例如: 
+
+```java
+/**
+ * Creates a thread pool that reuses a fixed number of threads
+ * operating off a shared unbounded queue.  At any point, at most
+ * {@code nThreads} threads will be active processing tasks.
+ * If additional tasks are submitted when all threads are active,
+ * they will wait in the queue until a thread is available.
+ * If any thread terminates due to a failure during execution
+ * prior to shutdown, a new one will take its place if needed to
+ * execute subsequent tasks.  The threads in the pool will exist
+ * until it is explicitly {@link ExecutorService#shutdown shutdown}.
+ *
+ * @param nThreads the number of threads in the pool
+ * @return the newly created thread pool
+ * @throws IllegalArgumentException if {@code nThreads <= 0}
+ */
+public static ExecutorService newFixedThreadPool(int nThreads) {
+    return new ThreadPoolExecutor(nThreads, nThreads,
+                                  0L, TimeUnit.MILLISECONDS,
+                                  new LinkedBlockingQueue<Runnable>());
+}
+```
 
 
 
