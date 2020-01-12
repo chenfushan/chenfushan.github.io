@@ -11,6 +11,7 @@
 #### SpringBoot
 
 - [Spring Boot 常用注解](springboot/spring-boot-annotation)
+- [Spring Boot 多环境配置以及自动部署](springboot/spring-boot-deploy)
 
 #### TCP/IP
 
